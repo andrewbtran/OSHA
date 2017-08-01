@@ -1,0 +1,17 @@
+library(readr)
+library(lubridate)
+library(ggplot2)
+library(ggjoy)
+
+ins1 <- read_csv("osha/osha_inspection-1.csv")
+ins2 <- read_csv("osha/osha_inspection-2.csv")
+ins3 <- read_csv("osha/osha_inspection-3.csv")
+ins4 <- read_csv("osha/osha_inspection-4.csv")
+ins5 <- read_csv("osha/osha_inspection-5.csv")
+
+ins <- rbind(ins1, ins2, ins3, ins4, ins5)
+rm(ins1)
+rm(ins2)
+rm(ins3)
+rm(ins4)
+rm(ins5)

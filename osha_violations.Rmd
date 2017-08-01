@@ -1,0 +1,100 @@
+---
+title: "Osha Violations"
+author: "Andrew Ba Tran"
+date: "7/25/2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+library(readr)
+library(lubridate)
+library(ggplot2)
+library(ggjoy)
+library(tidyverse)
+osha1 <- read_csv("osha/osha_violation-1.csv")
+osha2 <- read_csv("osha/osha_violation-2.csv")
+osha3 <- read_csv("osha/osha_violation-3.csv")
+osha4 <- read_csv("osha/osha_violation-4.csv")
+osha5 <- read_csv("osha/osha_violation-5.csv")
+osha6 <- read_csv("osha/osha_violation-6.csv")
+osha7 <- read_csv("osha/osha_violation-7.csv")
+osha8 <- read_csv("osha/osha_violation-8.csv")
+osha9 <- read_csv("osha/osha_violation-9.csv")
+osha10 <- read_csv("osha/osha_violation-10.csv")
+osha11 <- read_csv("osha/osha_violation-11.csv")
+osha12 <- read_csv("osha/osha_violation-12.csv")
+
+osha <- rbind(osha1, osha2, osha3, osha4, osha5, osha6, osha7, osha8, osha9, osha10, osha11, osha12)
+rm(osha1)
+rm(osha2)
+rm(osha3)
+rm(osha4)
+rm(osha5)
+rm(osha6)
+rm(osha7)
+rm(osha8)
+rm(osha9)
+rm(osha10)
+rm(osha11)
+rm(osha12)
+
+osha$issuance_year <- year(ymd(osha$issuance_date))
+osha$issuance_month <- month(ymd(osha$issuance_date), label=T)
+osha$issuance_day <- day(ymd(osha$issuance_date))
+
+osha$rec <- ifelse(osha$rec=="A", "Accident",
+                   ifelse(osha$rec=="C", "Compliance",
+                     ifelse(osha$rec=="I", "Imminent Danger",
+                        ifelse(osha$rec=="R", "Referral",     
+                           ifelse(osha$rec=="V", "Variance",  osha$rec)))))
+osha$viol_type <- ifelse(osha$viol_type=="S", "Serious",
+                   ifelse(osha$viol_type=="W", "Willful",
+                     ifelse(osha$viol_type=="R", "Repeat",
+                        ifelse(osha$viol_type=="O", "Other",  osha$viol_type))))
+osha$abate_complete <- ifelse(osha$abate_complete=="Q", "Quick Fix",
+                   ifelse(osha$abate_complete=="X", "Abatement Completed",
+                      ifelse(osha$abate_complete=="I", "Corrected During Inspection",
+                         ifelse(osha$abate_complete=="E", "Not Completed - Employer out of Business",
+                           ifelse(osha$abate_complete=="W", "Not Changed - Worksite Changed",
+                              ifelse(osha$abate_complete=="S", "Not Completed - Solicitor advised",
+                                 ifelse(osha$abate_complete=="A", "Not Completed - AD discretion",
+                                osha$abate_complete)))))))
+
+osha_years <- osha %>% 
+  group_by(issuance_year, issuance_month, viol_type) %>% 
+  summarize(violations=n()) %>%
+  filter(!is.na(issuance_month))
+
+osha_years <- data.frame(osha_years)
+osha_years$issuance_year2 <- as.factor(osha_years$issuance_year)
+
+osha_years <- filter(osha_years, issuance_year>=2000)
+
+
+```
+
+## Distribution of Violation filing dates
+
+```{r distro1, fig.width=10, fig.height=5, echo=F, warning=F, message=F}
+ggplot(osha, aes(x=issuance_day)) + geom_histogram()
+```
+
+## Distribution of Violation filing dates in 2017 alone
+
+```{r distro2, fig.width=10, fig.height=5, echo=F, warning=F, message=F}
+osha_2017 <- filter(osha, issuance_year==2017)
+
+ggplot(osha_2017, aes(x=issuance_day)) + geom_histogram()
+```
+
+## OSHA Violations
+
+```{r, fig.width=10, fig.height=12, echo=F}
+ggplot(data=osha_years, aes(x=issuance_month, y=violations, group=viol_type, color=viol_type, fill=viol_type)) +
+  geom_bar(stat="identity") +
+  facet_wrap(~issuance_year, ncol=3)
+```
+
+

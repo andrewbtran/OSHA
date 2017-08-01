@@ -1,0 +1,160 @@
+---
+title: "OSHA deep dive"
+author: "Andrew Ba Tran"
+date: "7/27/2017"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=F}
+#knitr::opts_chunk$set(cache=TRUE)
+```
+
+```{r loading, include=FALSE, message=F, warning=F}
+
+library(readr)
+library(lubridate)
+library(tidyverse)
+library(readxl)
+library(stringr)
+library(DT)
+
+ins1 <- read_csv("osha/osha_inspection-1.csv")
+ins2 <- read_csv("osha/osha_inspection-2.csv")
+ins3 <- read_csv("osha/osha_inspection-3.csv")
+ins4 <- read_csv("osha/osha_inspection-4.csv")
+ins5 <- read_csv("osha/osha_inspection-5.csv")
+
+ins <- rbind(ins1, ins2, ins3, ins4, ins5)
+rm(ins1)
+rm(ins2)
+rm(ins3)
+rm(ins4)
+rm(ins5)
+
+
+viol1 <- read_csv("osha/osha_violation-1.csv")
+viol2 <- read_csv("osha/osha_violation-2.csv")
+viol3 <- read_csv("osha/osha_violation-3.csv")
+viol4 <- read_csv("osha/osha_violation-4.csv")
+viol5 <- read_csv("osha/osha_violation-5.csv")
+viol6 <- read_csv("osha/osha_violation-6.csv")
+viol7 <- read_csv("osha/osha_violation-7.csv")
+viol8 <- read_csv("osha/osha_violation-8.csv")
+viol9 <- read_csv("osha/osha_violation-9.csv")
+viol10 <- read_csv("osha/osha_violation-10.csv")
+viol11 <- read_csv("osha/osha_violation-11.csv")
+viol12 <- read_csv("osha/osha_violation-12.csv")
+
+viol <- rbind(viol1, viol2, viol3, viol4, viol5, viol6, viol7, viol8, viol9, viol10, viol11, viol12)
+rm(viol1)
+rm(viol2)
+rm(viol3)
+rm(viol4)
+rm(viol5)
+rm(viol6)
+rm(viol7)
+rm(viol8)
+rm(viol9)
+rm(viol10)
+rm(viol11)
+rm(viol12)
+
+mega <- left_join(viol, ins, by="activity_nr")
+```
+
+
+
+```{r industries, include=FALSE, message=F, warning=F}
+naics <- read_excel("2017_NAICS_Descriptions.xlsx")
+naics$Title <- ifelse(str_sub(naics$Title, start=-1)=="T", substr(naics$Title, 1, nchar(naics$Title)-1) , naics$Title)
+
+mega$sector <- substr(mega$naics_code, 1,2)
+
+mega <- left_join(mega, naics, by=c("naics_code"="Code"))
+
+sectors <- read.csv("osha/sectors.csv", stringsAsFactors=F)
+sectors$Code <- as.character(sectors$Code)
+
+mega <- left_join(mega, sectors, by=c("sector"="Code"))
+
+mega$open_year <- year(ymd(mega$open_date))
+mega$open_month <- month(ymd(mega$open_date), label=T)
+
+industry <- mega %>% 
+  group_by(open_year, open_month, Sector_Title) %>% 
+  summarize(inspections_opened=n()) %>%
+  filter(!is.na(open_month))
+
+industry <- data.frame(industry)
+```
+
+```{r 2013, fig.width=10, fig.height=17, message=F, warning=F, echo=F}
+industry_2003 <- filter(mega, open_year>=2013) %>% 
+  group_by(open_year, open_month, Sector_Title) %>% 
+  summarize(inspections_opened=n()) %>%
+  filter(!is.na(open_month))
+
+#sector_chart <- ggplot(industry_2003, aes(x=open_month, y=inspections_opened, group=Sector_Title, color=Sector_Title, fill=Sector_Title)) 
+#sector_chart <- sector_chart +  geom_bar(stat="identity")
+#sector_chart <- sector_chart + facet_wrap(~open_year, ncol=1)
+#sector_chart <- sector_chart + theme(legend.position="top")
+#sector_chart <- sector_chart + labs(x=NULL, y="Inspections opened", title="Inspections by Sector since 2013", caption="Source: OSHA")
+#print(sector_chart)
+```
+
+```{r annually, echo=F,  message=F, warning=F, fig.width=9, fig.height=6}
+
+annually <- mega %>% 
+  group_by(open_year) %>% 
+  summarize(total_opened=n()) 
+
+annual_chart <- ggplot(annually, aes(x=open_year, y=total_opened)) 
+annual_chart <- annual_chart +  geom_bar(stat="identity")
+#annual_chart <- annual_chart + facet_wrap(~open_year, ncol=1)
+#annual_chart <- annual_chart + theme(legend.position="top")
+annual_chart <- annual_chart + labs(x=NULL, y="Inspections opened", title="Total annual inspections", caption="Source: OSHA")
+print(annual_chart)
+
+```
+
+
+```{r annually2, echo=F,  message=F, warning=F, fig.width=9, fig.height=15}
+
+annual_industry <- mega %>% 
+  filter(open_year>=2003) %>% 
+  group_by(open_year, Sector_Title) %>% 
+  summarize(total_opened=n()) 
+
+annual_chart2 <- ggplot(annual_industry, aes(x=open_year, y=total_opened, group=Sector_Title, color=Sector_Title, fill=Sector_Title)) 
+annual_chart2 <- annual_chart2 +  geom_line(stat="identity")
+annual_chart2 <- annual_chart2 + facet_wrap(~Sector_Title, ncol=3, scales="free")
+annual_chart2 <- annual_chart2 + labs(x=NULL, y="Inspections opened", title="Inspections by sector since 2003", caption="Source: OSHA")
+annual_chart2 <- annual_chart2 + theme(legend.position="none")
+
+print(annual_chart2)
+```
+
+```{r annual_table}
+annual_industry2 <- annual_industry %>% 
+  spread("open_year", "total_opened")
+datatable(annual_industry2)
+```
+
+```
+
+```{r 2016v2017, fig.width=10, fig.height=20, message=F, warning=F, echo=F}
+
+industry_2016 <- filter(mega, open_year>=2016) %>% 
+  group_by(open_year, open_month, site_state) %>% 
+  summarize(inspections_opened=n()) %>%
+  filter(!is.na(open_month))
+industry_2016$year <- as.factor(industry_2016$open_year)
+
+the_chart <- ggplot(industry_2016, aes(x=open_month, y=inspections_opened, group=year, color=year)) 
+the_chart <- the_chart + geom_line(stat="identity")
+the_chart <- the_chart + facet_wrap(~site_state, ncol=3, scales = "free")
+the_chart <- the_chart + labs(x=NULL, y="Inspections opened", title="OSHA inspections in 2016 and 2017", caption="Source: OSHA")
+print(the_chart)
+```
