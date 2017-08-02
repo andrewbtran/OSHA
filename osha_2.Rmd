@@ -136,13 +136,14 @@ annual_chart2 <- annual_chart2 + theme(legend.position="none")
 print(annual_chart2)
 ```
 
-```{r annual_table}
+
+```{r annual_table, echo=F}
 annual_industry2 <- annual_industry %>% 
   spread("open_year", "total_opened")
 datatable(annual_industry2)
 ```
 
-```
+
 
 ```{r 2016v2017, fig.width=10, fig.height=20, message=F, warning=F, echo=F}
 
@@ -158,3 +159,31 @@ the_chart <- the_chart + facet_wrap(~site_state, ncol=3, scales = "free")
 the_chart <- the_chart + labs(x=NULL, y="Inspections opened", title="OSHA inspections in 2016 and 2017", caption="Source: OSHA")
 print(the_chart)
 ```
+
+
+```{r monthly_chart, echo=F, warning=F, message=F, fig.width=10, fig.height=20}
+monthly_table <- filter(mega, open_year==2017) %>% 
+  group_by(Sector_Title, open_month) %>% 
+  summarize(inspections_opened=n())
+  
+monthly_table2 <- filter(mega, open_year==2017) %>% 
+  group_by(Sector_Title, open_month) %>% 
+  summarize(inspections_opened=n()) %>%
+  spread("open_month", "inspections_opened")
+  
+
+monthly_chart <- ggplot(monthly_table, aes(x=open_month, y=inspections_opened, group=Sector_Title, color=Sector_Title, fill=Sector_Title)) 
+monthly_chart <- monthly_chart +  geom_line(stat="identity")
+monthly_chart <- monthly_chart + facet_wrap(~Sector_Title, ncol=3, scales="free")
+monthly_chart <- monthly_chart + labs(x=NULL, y="Inspections opened", title="Inspections by sector since 2003", caption="Source: OSHA")
+monthly_chart <- monthly_chart + theme(legend.position="none")
+
+print(monthly_chart)
+```
+
+
+
+```{r monthly_table, echo=F}
+datatable(monthly_table2)
+```
+
